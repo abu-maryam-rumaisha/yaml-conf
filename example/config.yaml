@@ -1,0 +1,31 @@
+name: "my-service"            # literal
+port: ${APP_PORT:8080}        # env with fallback
+debug: ${APP_DEBUG}           # env only -> nil if unset
+level: ${LOG_LEVEL:info}
+timeout: ${APP_TIMEOUT:1m30s}
+secret: ${APP_SECRET}
+
+db: &primary                  # anchor
+  host: ${DB_HOST:localhost}
+  port: ${DB_PORT:5432}
+  user: ${DB_USER}
+  max_conn: 10
+
+replicas:
+  - <<: *primary              # merge key: inherit primary, override host
+    host: ${REPLICA1_HOST:replica-1}
+  - *primary                  # plain alias
+  - host: ${REPLICA3_HOST}    # nil element if REPLICA3_HOST unset
+
+tags: [api, "${REGION:eu-west-1}", v2]
+
+limits:
+  cpu: ${CPU_LIMIT:0.5}
+  mem: 512
+
+matrix:
+  - [1, 2]
+  - [3, "${MATRIX_X}"]
+
+unused:
+  user: ${NEVER_SET}
