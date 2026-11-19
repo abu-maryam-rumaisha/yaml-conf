@@ -21,7 +21,7 @@ package config
 
 import "time"
 
-//go:generate go run yaml-conf/cmd/yamlconf
+//go:generate go run github.com/abu-maryam-rumaisha/yaml-conf/cmd/yamlconf
 
 //yamlconf:generate config.yaml
 type Config struct {
@@ -171,7 +171,7 @@ YAML merge spec.
   works for a struct inside a grouped `type ( ... )` block.
 - **Spacing:** write it with **no space** after `//`, like `//go:generate`.
   Then gofmt leaves it alone and `go doc` hides it.
-- **One directive per package:** a single `//go:generate go run yaml-conf/cmd/yamlconf`
+- **One directive per package:** a single `//go:generate go run github.com/abu-maryam-rumaisha/yaml-conf/cmd/yamlconf`
   handles every marked struct and writes one file for each.
 - **Generated files:** files ending in `_yamlconf.go` are skipped when the
   package is scanned.
@@ -249,7 +249,7 @@ Markers are the recommended way to use the tool. Flags are available for
 one-off runs or for overriding a marker:
 
 ```
-go run yaml-conf/cmd/yamlconf [flags]
+go run github.com/abu-maryam-rumaisha/yaml-conf/cmd/yamlconf [flags]
 
   -type    generate only this struct (default: all marked structs)
   -yaml    YAML file (default: from the struct's marker)
@@ -263,7 +263,7 @@ go run yaml-conf/cmd/yamlconf [flags]
 the marker's values.
 
 ```go
-//go:generate go run yaml-conf/cmd/yamlconf -type Config -yaml config.yaml -prefix app
+//go:generate go run github.com/abu-maryam-rumaisha/yaml-conf/cmd/yamlconf -type Config -yaml config.yaml -prefix app
 ```
 
 ## Library use
@@ -285,8 +285,5 @@ src, err := yamlconf.Generate(yamlconf.Options{
   field is not split on commas. Write one YAML list item per value.
 - No fixed-size arrays, no `interface{}`/`any`, and no map keys other than `string`.
 - Prefix segments can't contain `.`.
-- The module path is `yaml-conf`. Rename it in `go.mod` (for example to
-  `github.com/you/yaml-conf`) before using it from other modules, and update
-  the `go:generate` lines to match.
 
 See [`example/`](example) for a working package with generated output and tests.

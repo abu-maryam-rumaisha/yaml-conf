@@ -2,7 +2,7 @@ package example
 
 import "time"
 
-//go:generate go run yaml-conf/cmd/yamlconf
+//go:generate go run github.com/abu-maryam-rumaisha/yaml-conf/cmd/yamlconf
 
 type LogLevel string
 

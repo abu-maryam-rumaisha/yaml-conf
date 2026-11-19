@@ -2,7 +2,7 @@
 //
 // Mark structs in the package, then add a single go:generate directive:
 //
-//	//go:generate go run yaml-conf/cmd/yamlconf
+//	//go:generate go run github.com/abu-maryam-rumaisha/yaml-conf/cmd/yamlconf
 //
 //	//yamlconf:generate config.yaml
 //	type Config struct { ... }
@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	yamlconf "yaml-conf"
+	yamlconf "github.com/abu-maryam-rumaisha/yaml-conf"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 	out := flag.String("out", "", "output file (default <type>"+yamlconf.GeneratedSuffix+")")
 	fn := flag.String("func", "", "loader function name (default Load<Type>)")
 	prefix := flag.String("prefix", "", "dotted YAML path the struct binds to (default: from the marker, or the root)")
-	dir := flag.String("dir", "example", "package directory")
+	dir := flag.String("dir", ".", "package directory")
 	flag.Parse()
 
 	if err := run(*dir, *typ, *yml, *out, *fn, *prefix); err != nil {

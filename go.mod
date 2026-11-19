@@ -1,4 +1,4 @@
-module yaml-conf
+module github.com/abu-maryam-rumaisha/yaml-conf
 
 go 1.26
 
