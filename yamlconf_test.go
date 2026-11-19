@@ -34,6 +34,9 @@ func TestGenerateErrors(t *testing.T) {
 		{"bad duration", "type C struct{ A *time.Duration `yaml:\"a\"` }", "a: ${D:5 parsecs}", "not a valid time.Duration"},
 		{"unknown key", "type C struct{ A *int `yaml:\"a\"` }", "b: 1", "no struct field"},
 		{"malformed ref", "type C struct{ A *string `yaml:\"a\"` }", "a: ${X", "malformed reference"},
+		{"unterminated quote", "type C struct{ A *string `yaml:\"a\"` }", `a: ${X:"abc}`, "unterminated"},
+		{"text after quote", "type C struct{ A *string `yaml:\"a\"` }", `a: ${X:"ab"c}`, "after closing"},
+		{"quoted bad int", "type C struct{ A *int `yaml:\"a\"` }", `a: ${X:"abc"}`, `"abc" is not a valid int`},
 		{"struct needs map", "type C struct{ A *D `yaml:\"a\"` }\ntype D struct{}", "a: 1", "must be a mapping"},
 		{"slice needs seq", "type C struct{ A []*int `yaml:\"a\"` }", "a: 1", "needs a YAML sequence"},
 		{"slice elem pointer", "type C struct{ A []int `yaml:\"a\"` }", "a: [1]", "must be a pointer"},
@@ -202,5 +205,39 @@ func TestDiscoverHonoursBuildConstraints(t *testing.T) {
 	must(t, err)
 	if len(got) != 1 || got[0].Type != "A" {
 		t.Fatalf("want only A, got %+v", got)
+	}
+}
+
+func TestUnquoteFallback(t *testing.T) {
+	cases := []struct {
+		in, want string
+		has      bool
+	}{
+		{``, ``, false},
+		{`postgres://localhost`, `postgres://localhost`, true},
+		{`"postgres://localhost"`, `postgres://localhost`, true},
+		{`'postgres://localhost'`, `postgres://localhost`, true},
+		{`""`, ``, true},
+		{`''`, ``, true},
+		{`"a\"b"`, `a"b`, true},
+		{`'it\'s'`, `it's`, true},
+		{`"a\\b"`, `a\b`, true},
+		{`"it's"`, `it's`, true},
+		{`a"b`, `a"b`, true},
+	}
+	for _, c := range cases {
+		got, has, err := unquoteFallback(c.in)
+		if err != nil || got != c.want || has != c.has {
+			t.Errorf("unquoteFallback(%q) = %q, %v, %v; want %q, %v", c.in, got, has, err, c.want, c.has)
+		}
+	}
+}
+
+func TestQuotedFallbackGenerated(t *testing.T) {
+	out, err := genSrc(t, "type C struct{ A *string `yaml:\"a\"`; P *int `yaml:\"p\"` }",
+		"a: ${DB_URL:\"postgres://localhost\"}\np: ${PORT:'5432'}\n")
+	must(t, err)
+	if !strings.Contains(out, `string("postgres://localhost")`) || !strings.Contains(out, "int(5432)") {
+		t.Fatalf("quotes not stripped:\n%s", out)
 	}
 }

@@ -438,7 +438,11 @@ var refRe = regexp.MustCompile(`^\$\{([A-Za-z_][A-Za-z0-9_]*)?(?::(.*))?\}$`)
 func parseValue(n *yaml.Node) (value, error) {
 	s := n.Value
 	if m := refRe.FindStringSubmatch(s); m != nil {
-		v := value{env: m[1], fallback: m[2], hasFallback: m[2] != ""}
+		fb, has, err := unquoteFallback(m[2])
+		if err != nil {
+			return value{}, fmt.Errorf("reference %q: %w", s, err)
+		}
+		v := value{env: m[1], fallback: fb, hasFallback: has}
 		if v.env == "" && !v.hasFallback {
 			return value{}, fmt.Errorf("empty reference %q", s)
 		}
@@ -448,6 +452,38 @@ func parseValue(n *yaml.Node) (value, error) {
 		return value{}, fmt.Errorf("malformed reference %q, want ${ENV} or ${ENV:fallback}", s)
 	}
 	return value{fallback: s, hasFallback: true}, nil
+}
+
+// unquoteFallback interprets the text after the colon in ${ENV:fallback}.
+// A fallback wrapped in "..." or '...' has the quotes removed; inside them a
+// backslash escapes the next character, so \" (or \') and \\ give a literal
+// quote or backslash. A pair of quotes with nothing between them is an
+// explicit empty fallback. An unquoted fallback is used as is, and an empty one means no
+// fallback.
+func unquoteFallback(s string) (fb string, has bool, err error) {
+	if s == "" {
+		return "", false, nil
+	}
+	q := s[0]
+	if q != '"' && q != '\'' {
+		return s, true, nil
+	}
+	var b strings.Builder
+	for i := 1; i < len(s); i++ {
+		switch c := s[i]; {
+		case c == '\\' && i+1 < len(s):
+			i++
+			b.WriteByte(s[i])
+		case c == q:
+			if i != len(s)-1 {
+				return "", false, fmt.Errorf("unexpected text after closing %c in fallback", q)
+			}
+			return b.String(), true, nil
+		default:
+			b.WriteByte(c)
+		}
+	}
+	return "", false, fmt.Errorf("unterminated %c in fallback", q)
 }
 
 // lookupPrefix walks a dotted path from root. It returns nil (all fields nil)

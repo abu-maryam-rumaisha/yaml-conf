@@ -73,6 +73,8 @@ cfg, err := config.LoadConfigWith(func(k string) (string, bool) {
 | ----------------------- | ------------------------------------------------------------ |
 | `${ENV:fallback}`       | Use env `ENV`. If it is unset or empty, use `fallback`.      |
 | `${ENV}`                | Use env `ENV`. If it is unset or empty, the field is `nil`.  |
+| `${ENV:"fallback"}`     | Same as `${ENV:fallback}`. The quotes (`"` or `'`) are removed. |
+| `${ENV:""}`             | Use env `ENV`. If it is unset or empty, use `""`.            |
 | `${ENV:}`               | Same as `${ENV}`. An empty fallback means no fallback.       |
 | `${:value}`             | Same as the literal `value`.                                 |
 | `5`, `true`, `"name"`   | Literal value, with no env lookup.                           |
@@ -83,6 +85,12 @@ Rules:
 - **Empty env vars:** an env var that is set to `""` counts as unset.
 - **Colons in fallbacks:** the value is split at the first `:`, so a fallback
   can contain colons: `${DB_URL:postgres://u:p@localhost/db}`.
+- **Quoted fallbacks:** a fallback wrapped in `"..."` or `'...'` has the quotes
+  removed, so `${DB_URL:"postgres://localhost"}` is the same as
+  `${DB_URL:postgres://localhost}`. Inside the quotes, `\"`, `\'` and `\\` give
+  a literal quote or backslash. `${X:""}` is an explicit empty-string fallback,
+  unlike `${X:}`, which means no fallback. Quotes in the middle of an unquoted
+  fallback are kept as they are.
 - **Quoting:** quoted values are resolved the same way, so `"${X:y}"` works.
   Inside inline lists (`[a, b]`) you **must** quote them, because YAML doesn't
   allow unquoted `{}` there: `tags: [api, "${REGION:eu}"]`.
